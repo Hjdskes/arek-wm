@@ -54,10 +54,8 @@ move_resize_frame (ArekWm *wm, MetaWindow *window, int x, int y, int w, int h)
 static void
 tile_monocle (ArekWm *wm, MetaRectangle *mon, MetaWorkspace *space)
 {
-	for (GList *ws = arek_wm_nexttiled (wm->windows, space); ws; ws = arek_wm_nexttiled(ws->next, space)) {
-		move_resize_frame (wm, ws->data,
-				   mon->x, mon->y,
-				   mon->width, mon->height);
+	for (GList *ws = arek_wm_nexttiled (wm->windows, space); ws; ws = arek_wm_nexttiled (ws->next, space)) {
+		move_resize_frame (wm, ws->data, mon->x, mon->y, mon->width, mon->height);
 	}
 }
 
@@ -68,9 +66,8 @@ tile_horizontal (ArekWm *wm, MetaRectangle *mon, MetaWorkspace *space)
 	MetaRectangle win_dim;
 	guint n, i, w, tx, mx, mh;
 
-	i = tx = mx = 0;
-
-	if ((n = g_list_length (wm->windows)) == 0) {
+	for (n = 0, ws = arek_wm_nexttiled (wm->windows, space); ws; ws = arek_wm_nexttiled (ws->next, space), n++);
+	if (n == 0) {
 		return;
 	}
 
@@ -80,7 +77,8 @@ tile_horizontal (ArekWm *wm, MetaRectangle *mon, MetaWorkspace *space)
 		mh = mon->height;
 	}
 
-	for (ws = arek_wm_nexttiled (wm->windows, space); ws; ws = arek_wm_nexttiled(ws->next, space)) {
+	i = tx = mx = 0;
+	for (ws = arek_wm_nexttiled (wm->windows, space); ws; ws = arek_wm_nexttiled (ws->next, space), i++) {
 		if (i < wm->nmaster) {
 			w = (mon->width - mx) / (MIN (n, wm->nmaster) - i);
 			move_resize_frame (wm, ws->data, mon->x + mx, mon->y, w, mh);
@@ -92,7 +90,6 @@ tile_horizontal (ArekWm *wm, MetaRectangle *mon, MetaWorkspace *space)
 			meta_window_get_frame_rect (ws->data, &win_dim);
 			tx += win_dim.width;
 		}
-		i++;
 	}
 }
 
@@ -103,7 +100,8 @@ tile_vertical (ArekWm *wm, MetaRectangle *mon, MetaWorkspace *space)
 	MetaRectangle win_dim;
 	guint n, i, h, ty, my, mw;
 
-	if ((n = g_list_length (wm->windows)) == 0) {
+	for (n = 0, ws = arek_wm_nexttiled (wm->windows, space); ws; ws = arek_wm_nexttiled (ws->next, space), n++);
+	if (n == 0) {
 		return;
 	}
 
@@ -114,7 +112,7 @@ tile_vertical (ArekWm *wm, MetaRectangle *mon, MetaWorkspace *space)
 	}
 
 	i = ty = my = 0;
-	for (ws = arek_wm_nexttiled (wm->windows, space); ws; ws = arek_wm_nexttiled(ws->next, space)) {
+	for (ws = arek_wm_nexttiled (wm->windows, space); ws; ws = arek_wm_nexttiled (ws->next, space), i++) {
 		if (i < wm->nmaster) {
 			h = (mon->height - my) / (MIN (n, wm->nmaster) - i);
 			move_resize_frame (wm, ws->data, mon->x, mon->y + my, mw, h);
@@ -126,7 +124,6 @@ tile_vertical (ArekWm *wm, MetaRectangle *mon, MetaWorkspace *space)
 			meta_window_get_frame_rect (ws->data, &win_dim);
 			ty += win_dim.height;
 		}
-		i++;
 	}
 }
 
