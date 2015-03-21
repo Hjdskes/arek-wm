@@ -29,3 +29,4 @@ void arek_wm_init_keybindings (ArekWm *wm);
 G_END_DECLS
 
 #endif /* __KEYBINDINGS_H__ */
+

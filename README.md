@@ -3,7 +3,7 @@ Arek window manager
 
 **A modern tiling window manager, based on libmutter**
 
-For a quick introduction to Arek Window Manager's (how it is set up, which
+For a quick introduction to Arek Window Manager (how it is set up, which
 layouts it supports, what default keybindings it uses, et cetera) see [structure.txt][struct].
 
 Installation
