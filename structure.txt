@@ -1,0 +1,132 @@
+This document explains the structure of Arek Window Manager. It documents the
+various decisions made to get Mutter into a tiling window manager state, which
+sometimes requires certain sub-optimal solutions. The upside of writing Arek
+Window Manager as a Mutter plugin, however, is the simplicity of the approach.
+The alternative would be to fork Mutter and hack its source directly, which is
+considerably more complicated and time consuming.
+
+Items in *asterisks* are not implemented, either because Mutter disallows them
+currently (in which case these items are considered to-do if/when they are
+supported) or because I simply haven't gotten there yet.
+
+Window management
+-----------------
+
+In general, tiling window managers offer both normal, i.e. floating, window
+management as well as tiling window management, which speaks for itself. Using
+Mutter, the whole floating part is already taken care of. However, tiled
+windows are usually on a separate "layer", below the floating windows. The
+advantage of this approach is that floating windows never dissapear behind the
+tiled windows, from which they would be hard to find and manage by the user.
+Mutter has a layering system that Arek Window Manager takes advantage of. Sadly
+this does not happen in the most elegant way, as *Mutter does not expose its
+windows' "below" property so that tiled windows could be lowered into the
+META_LAYER_BOTTOM layer*. Instead, tiled windows are kept in their default
+layer (META_LAYER_NORMAL) while floating windows are placed in the
+META_LAYER_TOP layer by setting their "above" property. Windows can be moved
+between tiling and floating state simply by changing their layer: as soon as a
+window's layer is changed, Arek Window Manager retiles the current workspace and
+the required changes are made. A window can be toggled between tiling and
+floating state by using the Super+Space keyboard shortcut or by dragging it away
+from its tiled position. *If Mutter ever allows setting new
+GDesktopTitlebarAction, middle clicking on the titlebar can be used as well.*
+
+Tiling window managers also offer several different layouts in which to tile
+windows. In Arek Window Manager, those are called modes. Currently, Arek Window
+Manager supports four of those modes:
+
+* Vertical tiling, your average regular tiling layout (figure 1) (Super+T);
+* Horizontal tiling, your average bottom tiling layout (figure 2) (Super+B);
+* Monocle, your average fullscreen tiling layout (Super+M);
+* Floating, regular stacking window manager behaviour (Super+F).
+
+  +-----------+-----------+      +-----------------------+
+  |           |           |      |                       |
+  |           |           |      |                       |
+  |           |           |      |                       |
+  |           +-----------+      +-----------+-----------+
+  |           |           |      |           |           |
+  |           |           |      |           |           |
+  |           |           |      |           |           |
+  +-----------+-----------+      +-----------+-----------+
+          Figure 1                        Figure 2
+
+The vertical and horizontal modes both support any (nonnegative) number of
+master windows. Increasing and decreasing the amount of master windows is done
+with Super+= and Super+-, respectively. The factor that the master area occupies
+on the monitor can also be changed, with Super+[ to decrease the factor and
+Super+] to increase it. Furthermore, a window can be swapped with the first
+master window via Super+Return.
+
+One can use the usual Super+Tab and Super+Shift+Tab to respectively focus the
+next and previous window. Windows in the stack can be moved around with
+Super+Control+Tab and Super+Control+Shift+Tab.
+
+Internally, Mutter keeps track of all the windows on all its workspaces. These
+lists can be queried per workspace via meta_workspace_list_windows. However,
+they are sorted on the stacking order of the windows contained in them. This
+order is not suitable for tiling purposes, which requires the list to be sorted
+by window's positions (e.g. the first window in the list will be the first
+master window). This difference requires Arek Window Manager to maintain its own
+list of windows. It does so by maintaining a GList that holds pointers to all
+MetaWindows that are currently active and should be managed by Arek Window
+Manager. New windows are always prepended to the list, which means they will
+always appear in the master area. When windows are moved around on the screen,
+internally their position in the list is changed. To quickly find the currently
+active window, Arek Window Manager keeps a pointer to this window's position in
+the list.
+
+Workspaces
+----------
+
+Please come back later :)
+
+Multimonitor
+------------
+
+Please come back even later :)
+
+Settings
+--------
+
+Arek Window Manager's default behaviour can be changed in its settings. These
+can be found at com.unia.wm in dconf-editor. Right now, settings that can be
+changed are:
+
+* The default master factor;
+* The step at which the master factor is in- or decreased;
+* The default amount of master windows;
+* The default tile mode.
+
+*Currently, changed settings do not take effect until Arek Window Manager is
+restarted.*
+
+Keybindings
+-----------
+
+As already shown, Arek Window Manager can be controlled with the keyboard.
+Keybindings are set via Mutter's meta_display_add_keybinding function.
+They can be configured in com.unia.arek.wm.keybindings. Note that some of
+Mutter's keybindings are reused, with a custom handler. For now these are:
+
+* "overlay-key", "panel-main-menu" and "panel-run-dialog" to open Arek Menu;
+* "switch-windows", "switch-applications", "switch-windows-backward" and
+  "switch-applications-backward" to cycle through the windows on a workspace;
+
+Here's a quick recap of all Arek Window Manager's keybindings:
+
+* Super+T: vertical tiling mode;
+* Super+B: horizontal tiling mode;
+* Super+M: monocle tiling mode;
+* Super+F: float tiling mode;
+* Super+Space: toggle the active window between floating and tiled;
+* Super+Return: move the active window to the master area;
+* Super+Tab: change focus to the next window;
+* Super+Shift+Tab: change focus to the previous window;
+* Super+Control+Tab: move the active window up in the stack;
+* Super+Control+Shift+Tab: move the active window down in the stack;
+* Super+=: increment the number of master windows;
+* Super+-: decrement the number of master windows;
+* Super+[: decrease the master factor;
+* Super+]: increase the master factor;
+

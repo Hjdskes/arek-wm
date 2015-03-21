@@ -1,0 +1,84 @@
+<schemalist>
+
+<enum id="com.unia.arek.wm.tilemode">
+	<value nick="vertical"   value="0"/>
+	<value nick="horizontal" value="1"/>
+	<value nick="monocle"    value="2"/>
+	<value nick="float"      value="3"/>
+</enum>
+
+<schema id="com.unia.arek.wm" path="/com/unia/arek/wm/" gettext-domain="arek">
+
+	<key name="tile-mode" enum="com.unia.arek.wm.tilemode">
+		<default>"vertical"</default>
+		<summary>Default tile mode</summary>
+		<description>All windows will be tiled in a specific mode. This value is the default mode.</description>
+	</key>
+
+	<key name="nmaster" type="u">
+		<default>1</default>
+		<summary>Default value for the number of windows inside the master area</summary>
+		<description>This value is the default amount to be placed there.</description>
+	</key>
+
+	<key name="mfact" type="d">
+		<range min="0.1" max="0.9"/>
+		<default>0.52</default>
+		<summary>Default value for the factor of master area size</summary>
+		<description>The master area occupies a certain factor the screen. This setting is its default.</description>
+	</key>
+
+	<key name="mfact-step" type="d">
+		<range min="0.01" max="0.45"/>
+		<default>0.05</default>
+		<summary>Stepsize used when in- or decreasing the master area factor</summary>
+		<description>This value is used for stepwise in- or decrements of the master area factor.</description>
+	</key>
+
+	<child name="keybindings" schema="com.unia.arek.wm.keybindings"/>
+</schema>
+
+<schema id="com.unia.arek.wm.keybindings" path="/com/unia/arek/wm/keybindings/">
+
+	<key name="tile-vertical" type="as">
+		<default><![CDATA[['<Super>T']]]></default>
+	</key>
+	<key name="tile-horizontal" type="as">
+		<default><![CDATA[['<Super>B']]]></default>
+	</key>
+	<key name="tile-monocle" type="as">
+		<default><![CDATA[['<Super>M']]]></default>
+	</key>
+	<key name="tile-float" type="as">
+		<default><![CDATA[['<Super>F']]]></default>
+	</key>
+
+	<key name="increase-nmaster" type="as">
+		<default><![CDATA[['<Super>equal']]]></default>
+	</key>
+	<key name="decrease-nmaster" type="as">
+		<default><![CDATA[['<Super>minus']]]></default>
+	</key>
+	<key name="increase-mfact" type="as">
+		<default><![CDATA[['<Super>bracketright']]]></default>
+	</key>
+	<key name="decrease-mfact" type="as">
+		<default><![CDATA[['<Super>bracketleft']]]></default>
+	</key>
+
+	<key name="move-to-master" type="as">
+		<default><![CDATA[['<Super>Return']]]></default>
+	</key>
+	<key name="move-up" type="as">
+		<default><![CDATA[['<Super><Ctrl>Tab']]]></default>
+	</key>
+	<key name="move-down" type="as">
+		<default><![CDATA[['<Super><Ctrl><Shift>Tab']]]></default>
+	</key>
+	<key name="toggle-floating" type="as">
+		<default><![CDATA[['<Super>space']]]></default>
+	</key>
+</schema>
+
+</schemalist>
+
