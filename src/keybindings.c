@@ -83,7 +83,7 @@ on_run_dialog (__attribute__ ((unused)) MetaDisplay *display,
 	       __attribute__ ((unused)) gpointer user_data)
 {
 	// TODO: don't hardcode
-	g_spawn_command_line_async ("/usr/bin/dmenu_run -b", NULL);
+	g_spawn_command_line_async ("dmenu_run -b", NULL);
 }
 
 static void
@@ -95,7 +95,7 @@ on_main_menu (__attribute__ ((unused)) MetaDisplay *display,
 	      __attribute__ ((unused)) gpointer user_data)
 {
 	// TODO: don't hardcode
-	g_spawn_command_line_async ("/usr/bin/dmenu_run -b", NULL);
+	g_spawn_command_line_async ("dmenu_run -b", NULL);
 }
 
 static void
@@ -103,7 +103,7 @@ on_overlay_key (__attribute__ ((unused)) MetaDisplay *display,
 		__attribute__ ((unused)) gpointer user_data)
 {
 	// TODO: don't hardcode
-	g_spawn_command_line_async ("/usr/bin/dmenu_run -b", NULL);
+	g_spawn_command_line_async ("dmenu_run -b", NULL);
 }
 
 static void
