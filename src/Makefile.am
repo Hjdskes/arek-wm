@@ -5,6 +5,7 @@ bin_PROGRAMS = \
 
 arek_wm_SOURCES = \
 	arek-wm.c \
+	background.c \
 	keybindings.c \
 	meta-wrapper.c \
 	tile.c \

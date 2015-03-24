@@ -2,7 +2,7 @@
  *
  * Copyright (C) 2015 Jente Hidskes <hjdskes@gmail.com>
  *
- * Window mapping and destroying is copied from Budgie WM by Ikey Doherty.
+ * All animations are copied from Budgie WM by Ikey Doherty.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include <meta/meta-plugin.h>
 
 #include "arek-wm.h"
+#include "background.h"
 #include "keybindings.h"
 #include "tile.h"
 #include "windowlist.h"
@@ -37,6 +38,7 @@
 #define MAP_TIMEOUT     150
 #define MAP_SCALE       0.8f
 #define FADE_TIMEOUT    115
+#define SHOW_TIMEOUT    1000
 
 static ClutterPoint PV_CENTER = { 0.5f, 0.5f };
 static ClutterPoint PV_NORM   = { 0.0f, 0.0f };
@@ -210,12 +212,30 @@ on_focus_window_changed (GObject *object,
 }
 
 static void
+on_monitors_changed (MetaScreen *screen, gpointer user_data)
+{
+	ArekWm *wm;
+	ClutterActor *background;
+
+	wm = AREK_WM (user_data);
+	clutter_actor_destroy_all_children (wm->background_group);
+
+	for (int i = 0; i < meta_screen_get_n_monitors (screen); i++) {
+		background = arek_background_new (screen, i);
+		clutter_actor_add_child (wm->background_group, background);
+		clutter_actor_show (background);
+	}
+}
+
+static void
 arek_wm_start (MetaPlugin *plugin)
 {
 	ArekWm *wm;
 	GSettings *settings;
+	ClutterActor *actors[2];
 
 	wm = AREK_WM (plugin);
+	/* Initialise Arek. */
 	// TODO: provide callbacks to update settings as they change
 	settings = g_settings_new (AREK_WM_SCHEMA);
 	wm->screen = meta_plugin_get_screen (plugin);
@@ -226,14 +246,34 @@ arek_wm_start (MetaPlugin *plugin)
 	wm->mfact_step = g_settings_get_double (settings, "mfact-step");
 	g_object_unref (settings);
 
-	// TODO: background
-	// TODO: monitors
-	// TODO: animate + tile existing windows?
+	// TODO: manage/tile existing windows
 
-	/* Set a static background color. */
+	/* Initialise background. */
+	actors[0] = meta_get_window_group_for_screen (wm->screen);
+	actors[1] = wm->background_group = meta_background_group_new ();
+	clutter_actor_insert_child_below (actors[0], actors[1], NULL);
+	g_signal_connect (wm->screen, "monitors-changed",
+			  G_CALLBACK (on_monitors_changed), wm);
+	on_monitors_changed (wm->screen, wm);
+
+	for (int i = 0; i < 2; i++) {
+		clutter_actor_show (actors[i]);
+		clutter_actor_set_opacity (actors[i], 0);
+	}
+
+	/* Set a static background color before showing the real background. */
 	clutter_actor_set_background_color (meta_get_stage_for_screen (wm->screen),
 					    CLUTTER_COLOR_DarkRed);
 	clutter_actor_show (meta_get_stage_for_screen (wm->screen));
+
+	/* Animate-in background and existing windows. */
+	for (int i = 0; i < 2; i++) {
+		clutter_actor_save_easing_state (actors[i]);
+		clutter_actor_set_easing_mode (actors[i], CLUTTER_EASE_OUT_QUAD);
+		clutter_actor_set_easing_duration (actors[i], SHOW_TIMEOUT);
+		clutter_actor_set_opacity (actors[i], 255);
+		clutter_actor_restore_easing_state (actors[i]);
+	}
 
 	/* Always keep a pointer to the currently focused MetaWindow's position
 	 * in our list of managed windows. */

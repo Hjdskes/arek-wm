@@ -48,6 +48,8 @@ struct _ArekWm {
 	MetaScreen *screen;
 	MetaDisplay *display;
 
+	ClutterActor *background_group;
+
 	GList *windows;
 	GList *active_window;
 	TileMode mode;
