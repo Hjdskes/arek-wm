@@ -52,15 +52,15 @@ move_resize_frame (ArekWm *wm, MetaWindow *window, int x, int y, int w, int h)
 }
 
 static void
-tile_monocle (ArekWm *wm, MetaRectangle *mon, MetaWorkspace *space)
+tile_monocle (ArekWm *wm, MetaRectangle *area, MetaWorkspace *space)
 {
 	for (GList *ws = arek_wm_nexttiled (wm->windows, space); ws; ws = arek_wm_nexttiled (ws->next, space)) {
-		move_resize_frame (wm, ws->data, mon->x, mon->y, mon->width, mon->height);
+		move_resize_frame (wm, ws->data, area->x, area->y, area->width, area->height);
 	}
 }
 
 static void
-tile_horizontal (ArekWm *wm, MetaRectangle *mon, MetaWorkspace *space)
+tile_horizontal (ArekWm *wm, MetaRectangle *area, MetaWorkspace *space)
 {
 	GList *ws;
 	MetaRectangle win_dim;
@@ -72,21 +72,21 @@ tile_horizontal (ArekWm *wm, MetaRectangle *mon, MetaWorkspace *space)
 	}
 
 	if (n > wm->nmaster) {
-		mh = wm->nmaster != 0 ? mon->height * wm->mfact : 0;
+		mh = wm->nmaster != 0 ? area->height * wm->mfact : 0;
 	} else {
-		mh = mon->height;
+		mh = area->height;
 	}
 
 	i = tx = mx = 0;
 	for (ws = arek_wm_nexttiled (wm->windows, space); ws; ws = arek_wm_nexttiled (ws->next, space), i++) {
 		if (i < wm->nmaster) {
-			w = (mon->width - mx) / (MIN (n, wm->nmaster) - i);
-			move_resize_frame (wm, ws->data, mon->x + mx, mon->y, w, mh);
+			w = (area->width - mx) / (MIN (n, wm->nmaster) - i);
+			move_resize_frame (wm, ws->data, area->x + mx, area->y, w, mh);
 			meta_window_get_frame_rect (ws->data, &win_dim);
 			mx += win_dim.width;
 		} else {
-			w = (mon->width - tx) / (n - i);
-			move_resize_frame (wm, ws->data, mon->x + tx, mon->y + mh, w, mon->height - mh);
+			w = (area->width - tx) / (n - i);
+			move_resize_frame (wm, ws->data, area->x + tx, area->y + mh, w, area->height - mh);
 			meta_window_get_frame_rect (ws->data, &win_dim);
 			tx += win_dim.width;
 		}
@@ -94,7 +94,7 @@ tile_horizontal (ArekWm *wm, MetaRectangle *mon, MetaWorkspace *space)
 }
 
 static void
-tile_vertical (ArekWm *wm, MetaRectangle *mon, MetaWorkspace *space)
+tile_vertical (ArekWm *wm, MetaRectangle *area, MetaWorkspace *space)
 {
 	GList *ws;
 	MetaRectangle win_dim;
@@ -106,21 +106,21 @@ tile_vertical (ArekWm *wm, MetaRectangle *mon, MetaWorkspace *space)
 	}
 
 	if (n > wm->nmaster) {
-		mw = wm->nmaster != 0 ? mon->width * wm->mfact : 0;
+		mw = wm->nmaster != 0 ? area->width * wm->mfact : 0;
 	} else {
-		mw = mon->width;
+		mw = area->width;
 	}
 
 	i = ty = my = 0;
 	for (ws = arek_wm_nexttiled (wm->windows, space); ws; ws = arek_wm_nexttiled (ws->next, space), i++) {
 		if (i < wm->nmaster) {
-			h = (mon->height - my) / (MIN (n, wm->nmaster) - i);
-			move_resize_frame (wm, ws->data, mon->x, mon->y + my, mw, h);
+			h = (area->height - my) / (MIN (n, wm->nmaster) - i);
+			move_resize_frame (wm, ws->data, area->x, area->y + my, mw, h);
 			meta_window_get_frame_rect (ws->data, &win_dim);
 			my += win_dim.height;
 		} else {
-			h = (mon->height - ty) / (n - i);
-			move_resize_frame (wm, ws->data, mon->x + mw, mon->y + ty, mon->width - mw, h);
+			h = (area->height - ty) / (n - i);
+			move_resize_frame (wm, ws->data, area->x + mw, area->y + ty, area->width - mw, h);
 			meta_window_get_frame_rect (ws->data, &win_dim);
 			ty += win_dim.height;
 		}
@@ -130,8 +130,8 @@ tile_vertical (ArekWm *wm, MetaRectangle *mon, MetaWorkspace *space)
 void
 arek_wm_retile (ArekWm *wm, MetaWindow *window)
 {
-	MetaRectangle mon;
 	MetaWorkspace *space;
+	MetaRectangle area;
 	gint monitor;
 
 	if (window) {
@@ -140,17 +140,17 @@ arek_wm_retile (ArekWm *wm, MetaWindow *window)
 		space = meta_screen_get_active_workspace (wm->screen);
 	}
 	monitor = meta_screen_get_current_monitor (wm->screen);
-	meta_screen_get_monitor_geometry (wm->screen, monitor, &mon);
+	meta_workspace_get_work_area_for_monitor (space, monitor, &area);
 
 	switch (wm->mode) {
 		case TILE_MODE_VERTICAL:
-			tile_vertical (wm, &mon, space);
+			tile_vertical (wm, &area, space);
 			break;
 		case TILE_MODE_HORIZONTAL:
-			tile_horizontal (wm, &mon, space);
+			tile_horizontal (wm, &area, space);
 			break;
 		case TILE_MODE_MONOCLE:
-			tile_monocle (wm, &mon, space);
+			tile_monocle (wm, &area, space);
 			break;
 		default: /* TILE_MODE_FLOAT: do nothing. */
 			break;
