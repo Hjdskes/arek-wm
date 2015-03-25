@@ -290,6 +290,11 @@ arek_wm_dispose (GObject *object)
 
 	wm = AREK_WM (object);
 
+	if (wm->background_group) {
+		clutter_actor_destroy (wm->background_group);
+		wm->background_group = NULL;
+	}
+
 	if (wm->windows) {
 		/* The data in the list is managed by Mutter. */
 		g_list_free (wm->windows);
@@ -340,6 +345,7 @@ arek_wm_init (ArekWm *wm)
 {
 	wm->screen = NULL;
 	wm->display = NULL;
+	wm->background_group = NULL;
 	wm->windows = NULL;
 	wm->active_window = NULL;
 	wm->mode = TILE_MODE_VERTICAL;
