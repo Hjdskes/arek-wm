@@ -27,7 +27,7 @@
 
 G_BEGIN_DECLS
 
-void arek_wm_retile (ArekWm *wm, MetaWindow *window);
+void arek_wm_retile (ArekWm *wm, MetaWorkspace *space);
 gboolean arek_wm_can_tile (MetaWindow *window);
 void arek_wm_make_float (ArekWm *wm, MetaWindow *window);
 void arek_wm_make_tile (ArekWm *wm, MetaWindow *window);

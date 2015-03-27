@@ -29,6 +29,7 @@
 #include "arek-wm.h"
 #include "background.h"
 #include "keybindings.h"
+#include "meta-wrapper.h"
 #include "tile.h"
 #include "windowlist.h"
 #include "workspace.h"
@@ -104,8 +105,8 @@ arek_wm_destroy (MetaPlugin *plugin, MetaWindowActor *window_actor)
 			/* Remove the window from the list of managed windows
 			 * and retile if necessary. */
 			arek_wm_remove_from_list (wm, window);
-			if (arek_wm_can_tile (window)) {
-				arek_wm_retile (wm, window);
+			if (!meta_window_is_floating (window) && !meta_window_is_minimized (window)) {
+				arek_wm_retile (wm, meta_window_get_workspace (window));
 			}
 
 			break;
@@ -183,7 +184,7 @@ arek_wm_map (MetaPlugin *plugin, MetaWindowActor *window_actor)
 			arek_wm_add_to_list (wm, window);
 			if (arek_wm_can_tile (window)) {
 				arek_wm_make_tile (wm, window);
-				arek_wm_retile (wm, window);
+				arek_wm_retile (wm, meta_window_get_workspace (window));
 			} else {
 				arek_wm_make_float (wm, window);
 			}

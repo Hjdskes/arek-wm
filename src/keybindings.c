@@ -115,7 +115,7 @@ set_mode (ArekWm *wm, TileMode mode)
 	space = meta_screen_get_active_workspace (wm->screen);
 
 	g_object_set_data (G_OBJECT (space), "mode", GINT_TO_POINTER (mode));
-	arek_wm_retile (wm, NULL);
+	arek_wm_retile (wm, space);
 }
 
 static void
@@ -189,7 +189,7 @@ set_nmaster (__attribute__ ((unused)) MetaDisplay *display,
 
 
 	g_object_set_data (G_OBJECT (space), "nmaster", GUINT_TO_POINTER (nmaster));
-	arek_wm_retile (wm, NULL);
+	arek_wm_retile (wm, space);
 }
 
 static void
@@ -219,7 +219,7 @@ set_mfact (__attribute__ ((unused)) MetaDisplay *display,
 	}
 
 	g_object_set_data (G_OBJECT (space), "mfact", GFLOAT_TO_POINTER (mfact));
-	arek_wm_retile (wm, NULL);
+	arek_wm_retile (wm, space);
 }
 
 /**
@@ -261,7 +261,7 @@ move_in_stack (__attribute__ ((unused)) MetaDisplay *display,
 	}
 
 	meta_window_activate (w->data, event->time);
-	arek_wm_retile (wm, w->data);
+	arek_wm_retile (wm, space);
 }
 
 static void
@@ -298,7 +298,7 @@ move_to_master (__attribute__ ((unused)) MetaDisplay *display,
 	arek_wm_remove_link_from_list (wm, w);
 	arek_wm_prepend_link_to_list (wm, w);
 	meta_window_activate (w->data, event->time);
-	arek_wm_retile (wm, w->data);
+	arek_wm_retile (wm, space);
 }
 
 static void
@@ -319,7 +319,7 @@ toggle_float (__attribute__ ((unused)) MetaDisplay *display,
 		arek_wm_make_float (wm, window);
 	}
 
-	arek_wm_retile (wm, window);
+	arek_wm_retile (wm, meta_window_get_workspace (window));
 }
 
 void

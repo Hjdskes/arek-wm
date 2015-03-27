@@ -41,7 +41,7 @@ on_window_position_changed (MetaWindow *window, gpointer user_data)
 	/* This signal is only emitted when the user has moved the window while
 	 * it is tiled, i.e. when the window should be made floating. */
 	arek_wm_make_float (wm, window);
-	arek_wm_retile (wm, window);
+	arek_wm_retile (wm, meta_window_get_workspace (window));
 }
 
 static void
@@ -137,18 +137,11 @@ tile_vertical (ArekWm *wm, MetaRectangle *area, MetaWorkspace *space)
 }
 
 void
-arek_wm_retile (ArekWm *wm, MetaWindow *window)
+arek_wm_retile (ArekWm *wm, MetaWorkspace *space)
 {
-	MetaWorkspace *space;
 	MetaRectangle area;
 	gint monitor;
 	gint mode;
-
-	if (window) {
-		space = meta_window_get_workspace (window);
-	} else {
-		space = meta_screen_get_active_workspace (wm->screen);
-	}
 
 	monitor = meta_screen_get_current_monitor (wm->screen);
 	meta_workspace_get_work_area_for_monitor (space, monitor, &area);
