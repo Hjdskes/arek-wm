@@ -229,6 +229,16 @@ on_monitors_changed (MetaScreen *screen, gpointer user_data)
 }
 
 static void
+on_mfact_step_changed (GSettings *settings, gchar *key, gpointer user_data)
+{
+	ArekWm *wm;
+
+	wm = AREK_WM (user_data);
+	// TODO: when GLib supports this, use floats in GSettings
+	wm->mfact_step = (gfloat) g_settings_get_double (settings, key);
+}
+
+static void
 arek_wm_start (MetaPlugin *plugin)
 {
 	ArekWm *wm;
@@ -236,10 +246,11 @@ arek_wm_start (MetaPlugin *plugin)
 
 	wm = AREK_WM (plugin);
 	/* Initialise Arek. */
-	// TODO: provide callbacks to update settings as they change
 	wm->screen = meta_plugin_get_screen (plugin);
 	wm->display = meta_screen_get_display (wm->screen);
 	wm->settings = g_settings_new (AREK_WM_SCHEMA);
+	g_signal_connect (wm->settings, "changed::mfact-step",
+			  G_CALLBACK (on_mfact_step_changed), wm);
 	// TODO: when GLib supports this, use floats in GSettings
 	wm->mfact_step = (gfloat) g_settings_get_double (wm->settings, "mfact-step");
 
