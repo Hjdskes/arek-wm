@@ -31,6 +31,7 @@
 #include "keybindings.h"
 #include "tile.h"
 #include "windowlist.h"
+#include "workspace.h"
 
 #define AREK_WM_SCHEMA  "com.unia.arek.wm"
 #define DESTROY_TIMEOUT 130
@@ -231,20 +232,19 @@ static void
 arek_wm_start (MetaPlugin *plugin)
 {
 	ArekWm *wm;
-	GSettings *settings;
 	ClutterActor *actors[2];
 
 	wm = AREK_WM (plugin);
 	/* Initialise Arek. */
 	// TODO: provide callbacks to update settings as they change
-	settings = g_settings_new (AREK_WM_SCHEMA);
 	wm->screen = meta_plugin_get_screen (plugin);
 	wm->display = meta_screen_get_display (wm->screen);
-	wm->mode = g_settings_get_enum (settings, "tile-mode");
-	wm->nmaster = g_settings_get_uint (settings, "nmaster");
-	wm->mfact = g_settings_get_double (settings, "mfact");
-	wm->mfact_step = g_settings_get_double (settings, "mfact-step");
-	g_object_unref (settings);
+	wm->settings = g_settings_new (AREK_WM_SCHEMA);
+	// TODO: when GLib supports this, use floats in GSettings
+	wm->mfact_step = (gfloat) g_settings_get_double (wm->settings, "mfact-step");
+
+	/* Setup all existing workspaces. */
+	arek_wm_init_workspaces (wm);
 
 	// TODO: manage/tile existing windows
 
@@ -307,6 +307,11 @@ arek_wm_dispose (GObject *object)
 		wm->active_window = NULL;
 	}
 
+	if (wm->settings) {
+		g_object_unref (wm->settings);
+		wm->settings = NULL;
+	}
+
 	G_OBJECT_CLASS (arek_wm_parent_class)->dispose (object);
 }
 
@@ -348,10 +353,7 @@ arek_wm_init (ArekWm *wm)
 	wm->background_group = NULL;
 	wm->windows = NULL;
 	wm->active_window = NULL;
-	wm->mode = TILE_MODE_VERTICAL;
-	wm->nmaster = 1;
-	wm->mfact = 0.52;
-	wm->mfact_step = 0.05;
+	wm->mfact_step = 0.05f;
 
 	/* TODO: decide on overriding Mutter behaviour. */
 	//meta_prefs_override_preference_schema (const char *key, const char *schema);

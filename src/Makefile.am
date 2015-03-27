@@ -10,6 +10,7 @@ arek_wm_SOURCES = \
 	meta-wrapper.c \
 	tile.c \
 	windowlist.c \
+	workspace.c \
 	main.c
 
 arek_wm_CFLAGS = \

@@ -27,6 +27,7 @@
 #include "meta-wrapper.h"
 #include "tile.h"
 #include "windowlist.h"
+#include "workspace.h"
 
 #define AREK_WM_SCHEMA_KEYBINDINGS "com.unia.arek.wm.keybindings"
 
@@ -107,6 +108,17 @@ on_overlay_key (__attribute__ ((unused)) MetaDisplay *display,
 }
 
 static void
+set_mode (ArekWm *wm, TileMode mode)
+{
+	MetaWorkspace *space;
+
+	space = meta_screen_get_active_workspace (wm->screen);
+
+	g_object_set_data (G_OBJECT (space), "mode", GINT_TO_POINTER (mode));
+	arek_wm_retile (wm, NULL);
+}
+
+static void
 set_mode_vertical (__attribute__ ((unused)) MetaDisplay *display,
 		   __attribute__ ((unused)) MetaScreen *screen,
 		   __attribute__ ((unused)) MetaWindow *window,
@@ -114,12 +126,7 @@ set_mode_vertical (__attribute__ ((unused)) MetaDisplay *display,
 		   __attribute__ ((unused)) MetaKeyBinding *binding,
 		   gpointer user_data)
 {
-	ArekWm *wm;
-
-	wm = AREK_WM (user_data);
-
-	wm->mode = TILE_MODE_VERTICAL;
-	arek_wm_retile (wm, NULL);
+	set_mode (AREK_WM (user_data), TILE_MODE_VERTICAL);
 }
 
 static void
@@ -130,12 +137,7 @@ set_mode_horizontal (__attribute__ ((unused)) MetaDisplay *display,
 		     __attribute__ ((unused)) MetaKeyBinding *binding,
 		     gpointer user_data)
 {
-	ArekWm *wm;
-
-	wm = AREK_WM (user_data);
-
-	wm->mode = TILE_MODE_HORIZONTAL;
-	arek_wm_retile (wm, NULL);
+	set_mode (AREK_WM (user_data), TILE_MODE_HORIZONTAL);
 }
 
 static void
@@ -146,12 +148,7 @@ set_mode_monocle (__attribute__ ((unused)) MetaDisplay *display,
 		  __attribute__ ((unused)) MetaKeyBinding *binding,
 		  gpointer user_data)
 {
-	ArekWm *wm;
-
-	wm = AREK_WM (user_data);
-
-	wm->mode = TILE_MODE_MONOCLE;
-	arek_wm_retile (wm, NULL);
+	set_mode (AREK_WM (user_data), TILE_MODE_MONOCLE);
 }
 
 static void
@@ -162,62 +159,66 @@ set_mode_float (__attribute__ ((unused)) MetaDisplay *display,
 		__attribute__ ((unused)) MetaKeyBinding *binding,
 		gpointer user_data)
 {
-	ArekWm *wm;
-
-	wm = AREK_WM (user_data);
-
-	wm->mode = TILE_MODE_FLOAT;
-	arek_wm_retile (wm, NULL);
+	set_mode (AREK_WM (user_data), TILE_MODE_FLOAT);
 }
 
 static void
 set_nmaster (__attribute__ ((unused)) MetaDisplay *display,
-	     __attribute__ ((unused)) MetaScreen *screen,
+	     MetaScreen *screen,
 	     __attribute__ ((unused)) MetaWindow *window,
 	     __attribute__ ((unused)) ClutterKeyEvent *event,
 	     MetaKeyBinding *binding,
 	     gpointer user_data)
 {
 	ArekWm *wm;
+	MetaWorkspace *space;
+	guint nmaster;
 
 	wm = AREK_WM (user_data);
+	space = meta_screen_get_active_workspace (screen);
+	nmaster = GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (space), "nmaster"));
 
 	if (meta_key_binding_is_reversed (binding)) {
-		if (wm->nmaster == 0) {
+		if (nmaster == 0) {
 			return;
 		}
-		wm->nmaster--;
+		nmaster--;
 	} else {
-		wm->nmaster++;
+		nmaster++;
 	}
 
+
+	g_object_set_data (G_OBJECT (space), "nmaster", GUINT_TO_POINTER (nmaster));
 	arek_wm_retile (wm, NULL);
 }
 
 static void
 set_mfact (__attribute__ ((unused)) MetaDisplay *display,
-	   __attribute__ ((unused)) MetaScreen *screen,
+	   MetaScreen *screen,
 	   __attribute__ ((unused)) MetaWindow *window,
 	   __attribute__ ((unused)) ClutterKeyEvent *event,
 	   MetaKeyBinding *binding,
 	   gpointer user_data)
 {
 	ArekWm *wm;
-	double mfact;
+	MetaWorkspace *space;
+	float mfact;
 
 	wm = AREK_WM (user_data);
+	space = meta_screen_get_active_workspace (screen);
+	mfact = GPOINTER_TO_FLOAT (g_object_get_data (G_OBJECT (space), "mfact"));
 
 	if (meta_key_binding_is_reversed (binding)) {
-		mfact = wm->mfact - wm->mfact_step;
+		mfact -= wm->mfact_step;
 	} else {
-		mfact = wm->mfact + wm->mfact_step;
+		mfact += wm->mfact_step;
 	}
 
 	if (mfact < 0.1 || mfact > 0.9) {
 		return;
 	}
 
-	wm->mfact = mfact;
+	g_object_set_data (G_OBJECT (space), "mfact", GFLOAT_TO_POINTER (mfact));
 	arek_wm_retile (wm, NULL);
 }
 
@@ -235,9 +236,13 @@ move_in_stack (__attribute__ ((unused)) MetaDisplay *display,
 	ArekWm *wm;
 	GList *w = NULL, *v = NULL;
 	MetaWorkspace *space;
+	gint mode;
 
 	wm = AREK_WM (user_data);
-	if (wm->mode == TILE_MODE_FLOAT ||
+	space = meta_window_get_workspace (w->data);
+	mode = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (space), "mode"));
+
+	if (mode == TILE_MODE_FLOAT ||
 	    !(w = wm->active_window) ||
 	    meta_window_is_floating (w->data) ||
 	    !arek_wm_can_tile (w->data))
@@ -245,7 +250,6 @@ move_in_stack (__attribute__ ((unused)) MetaDisplay *display,
 		return;
 	}
 
-	space = meta_window_get_workspace (w->data);
 	if (meta_key_binding_is_reversed (binding)) {
 		if (w != arek_wm_nexttiled (wm->windows, space) && (v = arek_wm_nexttiled (w->next, space))) {
 			arek_wm_switch_elems_in_list (wm, w, v);
@@ -271,10 +275,13 @@ move_to_master (__attribute__ ((unused)) MetaDisplay *display,
 	ArekWm *wm;
 	GList *w = NULL;
 	MetaWorkspace *space;
+	gint mode;
 
 	wm = AREK_WM (user_data);
+	space = meta_window_get_workspace (w->data);
+	mode = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (space), "mode"));
 
-	if (wm->mode == TILE_MODE_FLOAT ||
+	if (mode == TILE_MODE_FLOAT ||
 	    !(w = wm->active_window) ||
 	    meta_window_is_floating (w->data) ||
 	    !arek_wm_can_tile (w->data))
@@ -282,7 +289,6 @@ move_to_master (__attribute__ ((unused)) MetaDisplay *display,
 		return;
 	}
 
-	space = meta_window_get_workspace (w->data);
 	if (w == arek_wm_nexttiled (wm->windows, space)) {
 		if (!(w = arek_wm_nexttiled (w->next, space))) {
 			return;

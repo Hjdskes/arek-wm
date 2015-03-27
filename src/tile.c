@@ -29,6 +29,7 @@
 #include "arek-wm.h"
 #include "meta-wrapper.h"
 #include "tile.h"
+#include "workspace.h"
 
 static void
 on_window_position_changed (MetaWindow *window, gpointer user_data)
@@ -64,23 +65,27 @@ tile_horizontal (ArekWm *wm, MetaRectangle *area, MetaWorkspace *space)
 {
 	GList *ws;
 	MetaRectangle win_dim;
-	guint n, i, w, tx, mx, mh;
+	guint nmaster, n, i, w, tx, mx, mh;
+	gfloat mfact;
 
 	for (n = 0, ws = arek_wm_nexttiled (wm->windows, space); ws; ws = arek_wm_nexttiled (ws->next, space), n++);
 	if (n == 0) {
 		return;
 	}
 
-	if (n > wm->nmaster) {
-		mh = wm->nmaster != 0 ? area->height * wm->mfact : 0;
+	nmaster = GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (space), "nmaster"));
+	mfact = GPOINTER_TO_FLOAT (g_object_get_data (G_OBJECT (space), "mfact"));
+
+	if (n > nmaster) {
+		mh = nmaster != 0 ? area->height * mfact : 0;
 	} else {
 		mh = area->height;
 	}
 
 	i = tx = mx = 0;
 	for (ws = arek_wm_nexttiled (wm->windows, space); ws; ws = arek_wm_nexttiled (ws->next, space), i++) {
-		if (i < wm->nmaster) {
-			w = (area->width - mx) / (MIN (n, wm->nmaster) - i);
+		if (i < nmaster) {
+			w = (area->width - mx) / (MIN (n, nmaster) - i);
 			move_resize_frame (wm, ws->data, area->x + mx, area->y, w, mh);
 			meta_window_get_frame_rect (ws->data, &win_dim);
 			mx += win_dim.width;
@@ -98,23 +103,27 @@ tile_vertical (ArekWm *wm, MetaRectangle *area, MetaWorkspace *space)
 {
 	GList *ws;
 	MetaRectangle win_dim;
-	guint n, i, h, ty, my, mw;
+	guint nmaster, n, i, h, ty, my, mw;
+	gfloat mfact;
 
 	for (n = 0, ws = arek_wm_nexttiled (wm->windows, space); ws; ws = arek_wm_nexttiled (ws->next, space), n++);
 	if (n == 0) {
 		return;
 	}
 
-	if (n > wm->nmaster) {
-		mw = wm->nmaster != 0 ? area->width * wm->mfact : 0;
+	nmaster = GPOINTER_TO_UINT (g_object_get_data (G_OBJECT (space), "nmaster"));
+	mfact = GPOINTER_TO_FLOAT (g_object_get_data (G_OBJECT (space), "mfact"));
+
+	if (n > nmaster) {
+		mw = nmaster != 0 ? area->width * mfact : 0;
 	} else {
 		mw = area->width;
 	}
 
 	i = ty = my = 0;
 	for (ws = arek_wm_nexttiled (wm->windows, space); ws; ws = arek_wm_nexttiled (ws->next, space), i++) {
-		if (i < wm->nmaster) {
-			h = (area->height - my) / (MIN (n, wm->nmaster) - i);
+		if (i < nmaster) {
+			h = (area->height - my) / (MIN (n, nmaster) - i);
 			move_resize_frame (wm, ws->data, area->x, area->y + my, mw, h);
 			meta_window_get_frame_rect (ws->data, &win_dim);
 			my += win_dim.height;
@@ -133,16 +142,19 @@ arek_wm_retile (ArekWm *wm, MetaWindow *window)
 	MetaWorkspace *space;
 	MetaRectangle area;
 	gint monitor;
+	gint mode;
 
 	if (window) {
 		space = meta_window_get_workspace (window);
 	} else {
 		space = meta_screen_get_active_workspace (wm->screen);
 	}
+
 	monitor = meta_screen_get_current_monitor (wm->screen);
 	meta_workspace_get_work_area_for_monitor (space, monitor, &area);
+	mode = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (space), "mode"));
 
-	switch (wm->mode) {
+	switch (mode) {
 		case TILE_MODE_VERTICAL:
 			tile_vertical (wm, &area, space);
 			break;

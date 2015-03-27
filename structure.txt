@@ -79,7 +79,23 @@ the list.
 Workspaces
 ----------
 
-Please come back later :)
+Arek Window Manager supports workspaces, just like most regular (tiling) window
+managers. Each workspace has its own tiling mode, its own nmaster and its own
+mfact. Most of the workspace support comes from Mutter itself: all that had to
+be done was to give each MetaWorkspace its own instances of the above mentioned
+variables.
+
+These variables are added to an existing MetaWorkspace instance via
+g_object_set_data. This function takes a pointer, in which we conveniently stuff
+our nmaster and mode integers through GLib's G(U)INT_TO_POINTER. No such
+function exists for a float, however. To overcome this, Arek Window Manager
+comes with its own GFLOAT_TO_POINTER and GPOINTER_TO_FLOAT, defined in
+workspace.h. This is also the reason why a float is used instead of a double: it
+has to work on both 32bit and 64bit platforms.
+
+When a workspace is created, Arek Window Manager retrieves from its GSettings
+the needed variables and adds them to the workspace. The same is done upon
+startup with the existing four workspaces created by Mutter.
 
 Multimonitor
 ------------

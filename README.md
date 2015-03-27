@@ -27,10 +27,9 @@ install Arek Window Manager:
 TODO
 ----
 
-* Real workspaces support;
+* Dynamic workspaces support;
 * Real multimonitor support;
-* Client factor, requires a wrapper around MetaWindow or setting another
-  property with `g_object_set_data ()`;
+* Client factor, requires setting data with `g_object_set_data ()`;
 * Look into rearranging windows by draggin them around, instead of making them
   float.
 

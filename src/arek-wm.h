@@ -52,10 +52,9 @@ struct _ArekWm {
 
 	GList *windows;
 	GList *active_window;
-	TileMode mode;
-	guint nmaster;
-	gdouble mfact;
-	gdouble mfact_step;
+
+	GSettings *settings;
+	gfloat mfact_step;
 };
 
 struct _ArekWmClass {
