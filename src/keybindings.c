@@ -239,14 +239,16 @@ move_in_stack (__attribute__ ((unused)) MetaDisplay *display,
 	gint mode;
 
 	wm = AREK_WM (user_data);
-	space = meta_window_get_workspace (w->data);
-	mode = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (space), "mode"));
 
-	if (mode == TILE_MODE_FLOAT ||
-	    !(w = wm->active_window) ||
+	if (!(w = wm->active_window) ||
 	    meta_window_is_floating (w->data) ||
 	    !arek_wm_can_tile (w->data))
 	{
+		return;
+	}
+
+	space = meta_window_get_workspace (w->data);
+	if ((mode = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (space), "mode"))) == TILE_MODE_FLOAT) {
 		return;
 	}
 
@@ -278,14 +280,16 @@ move_to_master (__attribute__ ((unused)) MetaDisplay *display,
 	gint mode;
 
 	wm = AREK_WM (user_data);
-	space = meta_window_get_workspace (w->data);
-	mode = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (space), "mode"));
 
-	if (mode == TILE_MODE_FLOAT ||
-	    !(w = wm->active_window) ||
+	if (!(w = wm->active_window) ||
 	    meta_window_is_floating (w->data) ||
 	    !arek_wm_can_tile (w->data))
 	{
+		return;
+	}
+
+	space = meta_window_get_workspace (w->data);
+	if ((mode = GPOINTER_TO_INT (g_object_get_data (G_OBJECT (space), "mode"))) == TILE_MODE_FLOAT) {
 		return;
 	}
 
