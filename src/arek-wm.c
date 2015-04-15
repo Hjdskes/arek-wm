@@ -331,6 +331,12 @@ arek_wm_map (MetaPlugin *plugin, MetaWindowActor *window_actor)
 			g_object_set (actor, "scale-x", 1.0, "scale-y", 1.0, "opacity", 255, NULL);
 			clutter_actor_restore_easing_state (actor);
 
+			/* Windows might remember their state and map maximized
+			 * horizontally, vertically of both. This is useless to us,
+			 * so we unmaximize them here. */
+			// TODO: look at this again when we implement maximizing
+			meta_window_unmaximize (window, META_MAXIMIZE_BOTH);
+
 			/* Add the window to the list of managed windows and
 			 * tile it or make it float.*/
 			arek_wm_add_to_list (wm, window);
