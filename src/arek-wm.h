@@ -55,6 +55,10 @@ struct _ArekWm {
 
 	GSettings *settings;
 	gfloat mfact_step;
+
+	/* Only valid when switching workspaces. */
+	ClutterActor *out_group;
+	ClutterActor *in_group;
 };
 
 struct _ArekWmClass {

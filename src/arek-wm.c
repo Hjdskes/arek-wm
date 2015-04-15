@@ -2,7 +2,7 @@
  *
  * Copyright (C) 2015 Jente Hidskes <hjdskes@gmail.com>
  *
- * All animations are copied from Budgie WM by Ikey Doherty.
+ * Window mapping and destroying animations are copied from Budgie WM by Ikey Doherty.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@
 #define MAP_SCALE       0.8f
 #define FADE_TIMEOUT    115
 #define SHOW_TIMEOUT    1000
+#define SWITCH_TIMEOUT  250
 
 static ClutterPoint PV_CENTER = { 0.5f, 0.5f };
 static ClutterPoint PV_NORM   = { 0.0f, 0.0f };
@@ -58,6 +59,157 @@ arek_wm_plugin_info (__attribute__ ((unused)) MetaPlugin *plugin)
 		.description = "A modern tiling window manager"
 	};
 	return &info;
+}
+
+static void
+arek_wm_kill_switch_workspace (MetaPlugin *plugin)
+{
+	ArekWm *wm;
+
+	wm = AREK_WM (plugin);
+
+	if (wm->out_group) {
+		g_signal_emit_by_name (wm->out_group,
+				       "transitions-completed",
+				       wm->out_group,
+				       wm,
+				       NULL);
+	}
+}
+
+static void
+switch_workspace_done (__attribute__ ((unused)) ClutterActor *actor,
+		       gpointer user_data)
+{
+	ArekWm *wm;
+	GList *l;
+
+	wm = AREK_WM (user_data);
+	l = meta_get_window_actors (wm->screen);
+
+	while (l) {
+		ClutterActor *orig_parent = g_object_get_data (G_OBJECT (l->data), "orig-parent");
+
+		if (orig_parent) {
+			ClutterActor *actor = CLUTTER_ACTOR (l->data);
+
+			g_object_ref (actor);
+			clutter_actor_remove_child (clutter_actor_get_parent (actor), actor);
+			clutter_actor_add_child (orig_parent, actor);
+			g_object_unref (actor);
+
+			g_object_set_data (G_OBJECT (actor), "orig-parent", NULL);
+		}
+
+		l = l->next;
+	}
+
+	g_signal_handlers_disconnect_by_func (wm->out_group,
+					      G_CALLBACK (switch_workspace_done), user_data);
+	clutter_actor_remove_all_transitions (wm->out_group);
+	clutter_actor_remove_all_transitions (wm->in_group);
+	clutter_actor_destroy (wm->out_group);
+	clutter_actor_destroy (wm->in_group);
+	wm->out_group = NULL;
+	wm->in_group = NULL;
+	meta_plugin_switch_workspace_completed (META_PLUGIN (user_data));
+}
+
+static void
+arek_wm_switch_workspace (MetaPlugin *plugin,
+			  gint from,
+			  gint to,
+			  MetaMotionDirection direction)
+{
+	ArekWm *wm;
+	GList *l;
+	ClutterActor *stage;
+	int screen_width, screen_height;
+	int x_dest = 0, y_dest = 0;
+
+	if (from == to) {
+		meta_plugin_switch_workspace_completed (plugin);
+		return;
+	}
+
+	wm = AREK_WM (plugin);
+	wm->out_group = clutter_actor_new ();
+	wm->in_group = clutter_actor_new ();
+	stage = meta_get_stage_for_screen (wm->screen);
+	clutter_actor_add_child (stage, wm->in_group);
+	clutter_actor_add_child (stage, wm->out_group);
+	clutter_actor_set_child_above_sibling (stage, wm->in_group, NULL);
+	meta_screen_get_size (wm->screen, &screen_width, &screen_height);
+
+	// TODO: windows should slide "under" the panel/dock
+	// TODO: move over "in-between" workspaces, e.g. 1->3 shows 2
+	l = meta_get_window_actors (wm->screen);
+	while (l) {
+		MetaWindow *window = meta_window_actor_get_meta_window (l->data);
+		ClutterActor *actor = CLUTTER_ACTOR (l->data);
+		MetaWorkspace *space;
+		gint win_space;
+
+		if (!meta_window_showing_on_its_workspace (window) ||
+		    meta_window_is_on_all_workspaces (window)) {
+			l = l->next;
+			continue;
+		}
+
+		space = meta_window_get_workspace (window);
+		win_space = meta_workspace_index (space);
+		if (win_space == to || win_space == from) {
+			ClutterActor *orig_parent = clutter_actor_get_parent (actor);
+			ClutterActor *new_parent = win_space == to ? wm->in_group : wm->out_group;
+
+			g_object_set_data (G_OBJECT (actor),
+					   "orig-parent", orig_parent);
+
+			g_object_ref (actor);
+			clutter_actor_remove_child (orig_parent, actor);
+			clutter_actor_add_child (new_parent, actor);
+			g_object_unref (actor);
+		}
+
+		l = l->next;
+	}
+
+	if (direction == META_MOTION_UP ||
+	    direction == META_MOTION_UP_LEFT ||
+	    direction == META_MOTION_UP_RIGHT) {
+		y_dest = screen_height;
+	} else if (direction == META_MOTION_DOWN ||
+		   direction == META_MOTION_DOWN_LEFT ||
+		   direction == META_MOTION_DOWN_RIGHT) {
+		y_dest = -screen_height;
+	}
+
+	if (direction == META_MOTION_LEFT ||
+	    direction == META_MOTION_UP_LEFT ||
+	    direction == META_MOTION_DOWN_LEFT) {
+		x_dest = screen_width;
+	} else if (direction == META_MOTION_RIGHT ||
+		   direction == META_MOTION_UP_RIGHT ||
+		   direction == META_MOTION_DOWN_RIGHT) {
+		x_dest = -screen_width;
+	}
+
+	/* Animate-in the new workspace. */
+	clutter_actor_set_position (wm->in_group, -x_dest, -y_dest);
+	clutter_actor_save_easing_state (wm->in_group);
+	clutter_actor_set_easing_mode (wm->in_group, CLUTTER_EASE_OUT_QUAD);
+	clutter_actor_set_easing_duration (wm->in_group, SWITCH_TIMEOUT);
+	clutter_actor_set_position (wm->in_group, 0, 0);
+	clutter_actor_restore_easing_state (wm->in_group);
+
+	/* Animate-out the previous workspace. */
+	g_signal_connect (wm->out_group, "transitions-completed",
+			  G_CALLBACK (switch_workspace_done), plugin);
+	clutter_actor_save_easing_state (wm->out_group);
+	clutter_actor_set_easing_mode (wm->out_group, CLUTTER_EASE_OUT_QUAD);
+	clutter_actor_set_easing_duration (wm->out_group, SWITCH_TIMEOUT);
+	clutter_actor_set_position (wm->out_group, x_dest, y_dest);
+	clutter_actor_restore_easing_state (wm->out_group);
 }
 
 static void
@@ -324,6 +476,16 @@ arek_wm_dispose (GObject *object)
 		wm->settings = NULL;
 	}
 
+	if (wm->out_group) {
+		clutter_actor_destroy (wm->out_group);
+		wm->out_group = NULL;
+	}
+
+	if (wm->in_group) {
+		clutter_actor_destroy (wm->in_group);
+		wm->in_group = NULL;
+	}
+
 	G_OBJECT_CLASS (arek_wm_parent_class)->dispose (object);
 }
 
@@ -344,13 +506,13 @@ arek_wm_class_init (ArekWmClass *klass)
 	//meta_plugin_class->unmaximize = arek_wm_unmaximize;
 	meta_plugin_class->map = arek_wm_map;
 	meta_plugin_class->destroy = arek_wm_destroy;
-	//meta_plugin_class->switch_workspace = arek_wm_switch_workspace;
+	meta_plugin_class->switch_workspace = arek_wm_switch_workspace;
 	//meta_plugin_class->show_tile_preview = arek_wm_show_tile_preview;
 	//meta_plugin_class->hide_tile_preview = arek_wm_hide_tile_preview;
 	//meta_plugin_class->show_window_menu = arek_wm_show_window_menu;
 	//meta_plugin_class->show_window_menu_for_rect = arek_wm_show_window_menu_for_rect;
 	//meta_plugin_class->kill_window_effects = arek_wm_kill_window_effects;
-	//meta_plugin_class->kill_switch_workspace = arek_wm_kill_switch_workspace;
+	meta_plugin_class->kill_switch_workspace = arek_wm_kill_switch_workspace;
 	//meta_plugin_class->xevent_filter = arek_wm_xevent_filter;
 	//meta_plugin_class->keybinding_filter = arek_wm_keybinding_filter;
 	//meta_plugin_class->confirm_display_change = arek_wm_confirm_display_change;
@@ -365,7 +527,10 @@ arek_wm_init (ArekWm *wm)
 	wm->background_group = NULL;
 	wm->windows = NULL;
 	wm->active_window = NULL;
+	wm->settings = NULL;
 	wm->mfact_step = 0.05f;
+	wm->out_group = NULL;
+	wm->in_group = NULL;
 
 	/* TODO: decide on overriding Mutter behaviour. */
 	//meta_prefs_override_preference_schema (const char *key, const char *schema);
