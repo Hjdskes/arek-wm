@@ -213,14 +213,14 @@ arek_wm_switch_workspace (MetaPlugin *plugin,
 }
 
 static void
-arek_wm_destroy_done (ClutterActor *actor, gpointer user_data)
+destroy_done (ClutterActor *actor, gpointer user_data)
 {
 	MetaPlugin *plugin;
 
 	plugin = META_PLUGIN (user_data);
 
 	clutter_actor_remove_all_transitions (actor);
-	g_signal_handlers_disconnect_by_func (actor, G_CALLBACK (arek_wm_destroy_done), plugin);
+	g_signal_handlers_disconnect_by_func (actor, G_CALLBACK (destroy_done), plugin);
 	meta_plugin_destroy_completed (plugin, META_WINDOW_ACTOR (actor));
 }
 
@@ -248,7 +248,7 @@ arek_wm_destroy (MetaPlugin *plugin, MetaWindowActor *window_actor)
 			clutter_actor_set_easing_mode (actor, CLUTTER_EASE_OUT_QUAD);
 			clutter_actor_set_easing_duration (actor, DESTROY_TIMEOUT);
 			g_signal_connect (actor, "transitions-completed",
-					  G_CALLBACK (arek_wm_destroy_done), plugin);
+					  G_CALLBACK (destroy_done), plugin);
 
 			/* Now animate. */
 			g_object_set (actor, "scale-x", DESTROY_SCALE, "scale-y", DESTROY_SCALE, "opacity", 0, NULL);
@@ -269,14 +269,14 @@ arek_wm_destroy (MetaPlugin *plugin, MetaWindowActor *window_actor)
 }
 
 static void
-arek_wm_map_done (ClutterActor *actor, gpointer user_data)
+map_done (ClutterActor *actor, gpointer user_data)
 {
 	MetaPlugin *plugin;
 
 	plugin = META_PLUGIN (user_data);
 
 	clutter_actor_remove_all_transitions (actor);
-	g_signal_handlers_disconnect_by_func (actor, G_CALLBACK (arek_wm_map_done), plugin);
+	g_signal_handlers_disconnect_by_func (actor, G_CALLBACK (map_done), plugin);
 	g_object_set (actor, "pivot-point", &PV_NORM, NULL);
 	meta_plugin_map_completed (plugin, META_WINDOW_ACTOR (actor));
 }
@@ -306,7 +306,7 @@ arek_wm_map (MetaPlugin *plugin, MetaWindowActor *window_actor)
 			clutter_actor_set_easing_mode (actor, CLUTTER_EASE_IN_SINE);
 			clutter_actor_set_easing_duration (actor, FADE_TIMEOUT);
 			g_signal_connect (actor, "transitions-completed",
-					  G_CALLBACK (arek_wm_map_done), plugin);
+					  G_CALLBACK (map_done), plugin);
 
 			g_object_set (actor, "opacity", 255, NULL);
 			clutter_actor_restore_easing_state (actor);
@@ -325,7 +325,7 @@ arek_wm_map (MetaPlugin *plugin, MetaWindowActor *window_actor)
 			clutter_actor_set_easing_mode (actor, CLUTTER_EASE_IN_SINE);
 			clutter_actor_set_easing_duration (actor, MAP_TIMEOUT);
 			g_signal_connect (actor, "transitions-completed",
-					  G_CALLBACK (arek_wm_map_done), plugin);
+					  G_CALLBACK (map_done), plugin);
 
 			/* Now animate. */
 			g_object_set (actor, "scale-x", 1.0, "scale-y", 1.0, "opacity", 255, NULL);
