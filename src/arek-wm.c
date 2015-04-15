@@ -78,6 +78,13 @@ arek_wm_kill_switch_workspace (MetaPlugin *plugin)
 }
 
 static void
+arek_wm_kill_window_effects (MetaPlugin *plugin, MetaWindowActor *actor)
+{
+	g_signal_emit_by_name (actor, "transitions-completed",
+			       actor, plugin, NULL);
+}
+
+static void
 switch_workspace_done (__attribute__ ((unused)) ClutterActor *actor,
 		       gpointer user_data)
 {
@@ -517,7 +524,7 @@ arek_wm_class_init (ArekWmClass *klass)
 	//meta_plugin_class->hide_tile_preview = arek_wm_hide_tile_preview;
 	//meta_plugin_class->show_window_menu = arek_wm_show_window_menu;
 	//meta_plugin_class->show_window_menu_for_rect = arek_wm_show_window_menu_for_rect;
-	//meta_plugin_class->kill_window_effects = arek_wm_kill_window_effects;
+	meta_plugin_class->kill_window_effects = arek_wm_kill_window_effects;
 	meta_plugin_class->kill_switch_workspace = arek_wm_kill_switch_workspace;
 	//meta_plugin_class->xevent_filter = arek_wm_xevent_filter;
 	//meta_plugin_class->keybinding_filter = arek_wm_keybinding_filter;
